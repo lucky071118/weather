@@ -1,0 +1,3 @@
+mistralai[agents]
+line-bot-sdk
+black
