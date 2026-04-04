@@ -1,6 +1,6 @@
 import os
 import requests
-from mistralai import Mistral
+from mistralai.client import Mistral
 
 WEATHER_API_KEY = os.environ["WEATHER_API_KEY"]
 LINE_CHANNEL_ID = os.environ["LINE_CHANNEL_ID"]
@@ -22,7 +22,7 @@ with Mistral(api_key=MISTRAL_API_KEY) as client:
     agent_response = client.agents.complete(
         agent_id=MISTRAL_AGENT_ID,
         messages=[
-            {"role": "user", "content": weather_response}
+            {"role": "user", "content": weather_response.text}
         ],
     )
 
