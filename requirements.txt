@@ -1,2 +1,1 @@
 mistralai[agents]==2.3.0
-black==26.3.1
