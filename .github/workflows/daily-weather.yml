@@ -2,7 +2,7 @@ name: Daily Weather Push
 
 on:
   schedule:
-    - cron: "30 0 * * *" # 08:30 UTC+8 (00:30 UTC)
+    - cron: "23 23 * * *" # 07:23 UTC+8 (23:23 UTC)
   workflow_dispatch: # 允許手動觸發
 
 jobs:
