@@ -65,9 +65,9 @@ async function runWeatherJob(env) {
   const aiText = await generateAiText(env, weatherText);
   const normalizedAiText = (aiText || '').trim();
 
-  if (!normalizedAiText || normalizedAiText.toLowerCase() === 'nothing') {
-    return new Response('No message sent.', { status: 200 });
-  }
+  //if (!normalizedAiText || normalizedAiText.toLowerCase() === 'nothing') {
+  //  return new Response('No message sent.', { status: 200 });
+  //}
 
   await sendLineMessage(env, aiText);
   return new Response('Weather update sent successfully.', { status: 200 });
