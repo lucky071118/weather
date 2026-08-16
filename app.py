@@ -24,15 +24,17 @@ agent_response = requests.post(
     },
 )
 ai_text = agent_response.json()["choices"][0]["message"]["content"]
+normalized_ai_text = (ai_text or "").strip()
 
-requests.post(
-    "https://api.line.me/v2/bot/message/push",
-    headers={
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {LINE_CHANNEL_ACCESS_TOKEN}",
-    },
-    json={
-        "to": LINE_CHANNEL_ID,
-        "messages": [{"type": "text", "text": ai_text}],
-    },
-)
+if normalized_ai_text and normalized_ai_text.lower() != "nothing":
+    requests.post(
+        "https://api.line.me/v2/bot/message/push",
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {LINE_CHANNEL_ACCESS_TOKEN}",
+        },
+        json={
+            "to": LINE_CHANNEL_ID,
+            "messages": [{"type": "text", "text": ai_text}],
+        },
+    )
