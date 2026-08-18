@@ -46,7 +46,7 @@ async function generateAiText(env, weatherText) {
 
 async function sendLineMessage(env, aiText) {
   const payload = {
-    to: String(env.LINE_CHANNEL_ID),
+    to: Number(env.LINE_CHANNEL_ID),
     messages: [{ type: 'text', text: aiText }],
   };
   
