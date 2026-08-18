@@ -13,7 +13,9 @@ async function fetchWeather(env) {
   console.log('[fetchWeather] Response status: ' + response.status);
 
   if (!response.ok) {
+    const errorText = await response.text();
     console.error(`[fetchWeather] API error - Status: ${response.status}, StatusText: ${response.statusText}`);
+    console.error('[fetchWeather] Error response body: ' + errorText);
     throw new Error(`Weather API request failed: ${response.status} ${response.statusText}`);
   }
 
@@ -25,6 +27,8 @@ async function fetchWeather(env) {
 async function generateAiText(env, weatherText) {
   console.log('[generateAiText] Starting AI text generation');
   console.log('[generateAiText] Input weather data length: ' + weatherText.length + ' bytes');
+  console.log('[generateAiText] MISTRAL_AGENT_ID exists: ' + (env.MISTRAL_AGENT_ID ? 'yes' : 'no'));
+  console.log('[generateAiText] MISTRAL_API_KEY exists: ' + (env.MISTRAL_API_KEY ? 'yes' : 'no'));
   console.log('[generateAiText] Calling Mistral API');
   
   const response = await fetch(MISTRAL_API_URL, {
@@ -42,7 +46,9 @@ async function generateAiText(env, weatherText) {
   console.log('[generateAiText] Response status: ' + response.status);
 
   if (!response.ok) {
+    const errorText = await response.text();
     console.error(`[generateAiText] API error - Status: ${response.status}, StatusText: ${response.statusText}`);
+    console.error('[generateAiText] Error response body: ' + errorText);
     throw new Error(`Mistral API request failed: ${response.status} ${response.statusText}`);
   }
 
@@ -63,7 +69,15 @@ async function generateAiText(env, weatherText) {
 async function sendLineMessage(env, aiText) {
   console.log('[sendLineMessage] Starting LINE message sending');
   console.log('[sendLineMessage] Message content length: ' + aiText.length + ' bytes');
+  console.log('[sendLineMessage] LINE_CHANNEL_ID exists: ' + (env.LINE_CHANNEL_ID ? 'yes' : 'no'));
+  console.log('[sendLineMessage] LINE_CHANNEL_ACCESS_TOKEN exists: ' + (env.LINE_CHANNEL_ACCESS_TOKEN ? 'yes' : 'no'));
   console.log('[sendLineMessage] Calling LINE API');
+  
+  const payload = {
+    to: env.LINE_CHANNEL_ID,
+    messages: [{ type: 'text', text: aiText }],
+  };
+  console.log('[sendLineMessage] Payload structure: to=' + (payload.to ? 'set' : 'missing') + ', messages.length=' + payload.messages.length);
   
   const response = await fetch(LINE_API_URL, {
     method: 'POST',
@@ -71,16 +85,15 @@ async function sendLineMessage(env, aiText) {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${env.LINE_CHANNEL_ACCESS_TOKEN}`,
     },
-    body: JSON.stringify({
-      to: env.LINE_CHANNEL_ID,
-      messages: [{ type: 'text', text: aiText }],
-    }),
+    body: JSON.stringify(payload),
   });
 
   console.log('[sendLineMessage] Response status: ' + response.status);
 
   if (!response.ok) {
+    const errorText = await response.text();
     console.error(`[sendLineMessage] API error - Status: ${response.status}, StatusText: ${response.statusText}`);
+    console.error('[sendLineMessage] Error response body: ' + errorText);
     throw new Error(`LINE API request failed: ${response.status} ${response.statusText}`);
   }
 
