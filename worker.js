@@ -70,6 +70,8 @@ async function sendLineMessage(env, aiText) {
   console.log('[sendLineMessage] Starting LINE message sending');
   console.log('[sendLineMessage] Message content length: ' + aiText.length + ' bytes');
   console.log('[sendLineMessage] LINE_CHANNEL_ID exists: ' + (env.LINE_CHANNEL_ID ? 'yes' : 'no'));
+  console.log('[sendLineMessage] LINE_CHANNEL_ID length: ' + (env.LINE_CHANNEL_ID ? env.LINE_CHANNEL_ID.length : 'N/A'));
+  console.log('[sendLineMessage] LINE_CHANNEL_ID type: ' + typeof env.LINE_CHANNEL_ID);
   console.log('[sendLineMessage] LINE_CHANNEL_ACCESS_TOKEN exists: ' + (env.LINE_CHANNEL_ACCESS_TOKEN ? 'yes' : 'no'));
   console.log('[sendLineMessage] Calling LINE API');
   
@@ -78,6 +80,7 @@ async function sendLineMessage(env, aiText) {
     messages: [{ type: 'text', text: aiText }],
   };
   console.log('[sendLineMessage] Payload structure: to=' + (payload.to ? 'set' : 'missing') + ', messages.length=' + payload.messages.length);
+  console.log('[sendLineMessage] Full payload: ' + JSON.stringify(payload));
   
   const response = await fetch(LINE_API_URL, {
     method: 'POST',
