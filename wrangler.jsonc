@@ -4,6 +4,6 @@
   "compatibility_date": "2026-08-16",
   "workers_dev": false,
   "triggers": {
-    "crons": ["0 0 * * *"]
+    "crons": ["*/2 * * * *"]
   }
 }
