@@ -45,8 +45,13 @@ async function generateAiText(env, weatherText) {
 }
 
 async function sendLineMessage(env, aiText) {
+  const groupId = env.LINE_GROUP_ID?.trim();
+  if (!groupId) {
+    throw new Error('LINE_GROUP_ID is not configured.');
+  }
+
   const payload = {
-    to: Number(env.LINE_CHANNEL_ID),
+    to: groupId,
     messages: [{ type: 'text', text: aiText }],
   };
   
@@ -69,15 +74,20 @@ async function sendLineMessage(env, aiText) {
 }
 
 async function runWeatherJob(env) {
+  if (!env.LINE_GROUP_ID?.trim()) {
+    console.log('[runWeatherJob] LINE_GROUP_ID is not configured; skipping.');
+    return new Response('LINE_GROUP_ID is not configured; skipped.', { status: 200 });
+  }
+
   const weatherText = await fetchWeather(env);
   const aiText = await generateAiText(env, weatherText);
   const normalizedAiText = (aiText || '').trim();
 
-  //if (!normalizedAiText || normalizedAiText.toLowerCase() === 'nothing') {
-  //  return new Response('No message sent.', { status: 200 });
-  //}
+  if (!normalizedAiText || normalizedAiText.toLowerCase() === 'nothing') {
+    return new Response('No message sent.', { status: 200 });
+  }
 
-  await sendLineMessage(env, aiText);
+  await sendLineMessage(env, normalizedAiText);
   return new Response('Weather update sent successfully.', { status: 200 });
 }
 
