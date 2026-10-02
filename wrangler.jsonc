@@ -1,26 +1,27 @@
 {
-  "name": "weather",
-  "main": "worker.js",
-  "compatibility_date": "2026-08-16",
-  "workers_dev": false,
-  "triggers": {
-    "crons": ["20 0 * * *"]
-  },
-
-  "observability": {
-    "enabled": false,
-    "head_sampling_rate": 1,
-    "logs": {
-      "enabled": true,
-      "head_sampling_rate": 1,
-      "persist": true,
-      "invocation_logs": true
-    },
-    "traces": {
-      "enabled": false,
-      "persist": true,
-      "head_sampling_rate": 1
-    }
-  }
-
+	"name": "weather",
+	"main": "worker.js",
+	"compatibility_date": "2026-08-16",
+	"workers_dev": false,
+	"triggers": {
+		"crons": [
+			"20 0 * * *"
+		]
+	},
+	"observability": {
+		"enabled": false,
+		"head_sampling_rate": 1,
+		"logs": {
+			"enabled": true,
+			"head_sampling_rate": 1,
+			"persist": true,
+			"invocation_logs": true
+		},
+		"traces": {
+			"enabled": false,
+			"persist": true,
+			"head_sampling_rate": 1
+		}
+	},
+	"preview_urls": false
 }
