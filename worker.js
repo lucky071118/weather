@@ -1,58 +1,46 @@
 const WEATHER_API_URL = 'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-C0032-001';
-const MISTRAL_API_URL = 'https://api.mistral.ai/v1/agents/completions';
 const LINE_API_URL = 'https://api.line.me/v2/bot/message/push';
 
 async function fetchWeather(env) {
-  const url = `${WEATHER_API_URL}?Authorization=${encodeURIComponent(env.WEATHER_API_KEY)}&locationName=${encodeURIComponent('臺北市')}`;
+  const url = new URL(WEATHER_API_URL);
+  url.searchParams.set('Authorization', env.WEATHER_API_KEY);
+  url.searchParams.set('locationName', '臺北市');
   const response = await fetch(url);
 
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`[fetchWeather] Status: ${response.status}, Body: ${errorText}`);
     throw new Error(`Weather API request failed: ${response.status} ${response.statusText}`);
   }
 
-  return response.text();
+  return response.json();
 }
 
-async function generateAiText(env, weatherText) {
-  const response = await fetch(MISTRAL_API_URL, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${env.MISTRAL_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      agent_id: env.MISTRAL_AGENT_ID,
-      messages: [{ role: 'user', content: weatherText }],
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`[generateAiText] Status: ${response.status}, Body: ${errorText}`);
-    throw new Error(`Mistral API request failed: ${response.status} ${response.statusText}`);
+function generateWeatherAlert(weatherData, now) {
+  const elements = weatherData.records.location
+    .find((location) => location.locationName === '臺北市').weatherElement;
+  const end = now + 18 * 60 * 60 * 1000;
+  const values = (name) => elements.find((element) => element.elementName === name)
+    .time
+    .filter((period) => {
+      const start = Date.parse(`${period.startTime.replace(' ', 'T')}+08:00`);
+      const finish = Date.parse(`${period.endTime.replace(' ', 'T')}+08:00`);
+      return start < end && finish > now;
+    })
+    .map((period) => Number(period.parameter.parameterName));
+  const alerts = [];
+  if (values('MinT').some((temperature) => temperature < 10)) {
+    alerts.push('有低溫，得穿厚外套');
   }
-
-  const data = await response.json();
-  const content = data?.choices?.[0]?.message?.content;
-
-  if (typeof content !== 'string') {
-    throw new Error('Mistral response did not include a valid message content.');
+  if (values('PoP').some((probability) => probability >= 40)) {
+    alerts.push('有下雨，得攜帶雨傘');
   }
-
-  return content;
+  return alerts.join('\n');
 }
 
-async function sendLineMessage(env, aiText) {
+async function sendLineMessage(env, weatherText) {
   const groupId = env.LINE_GROUP_ID?.trim();
-  if (!groupId) {
-    throw new Error('LINE_GROUP_ID is not configured.');
-  }
-
   const payload = {
     to: groupId,
-    messages: [{ type: 'text', text: aiText }],
+    messages: [{ type: 'text', text: weatherText }],
   };
   
   const response = await fetch(LINE_API_URL, {
@@ -65,48 +53,41 @@ async function sendLineMessage(env, aiText) {
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`[sendLineMessage] Status: ${response.status}, Body: ${errorText}`);
     throw new Error(`LINE API request failed: ${response.status} ${response.statusText}`);
   }
-
-  return response.text();
 }
 
-async function runWeatherJob(env) {
+async function runWeatherJob(env, now = Date.now()) {
   if (!env.LINE_GROUP_ID?.trim()) {
-    console.log('[runWeatherJob] LINE_GROUP_ID is not configured; skipping.');
     return new Response('LINE_GROUP_ID is not configured; skipped.', { status: 200 });
   }
 
-  const weatherText = await fetchWeather(env);
-  const aiText = await generateAiText(env, weatherText);
-  const normalizedAiText = (aiText || '').trim();
-
-  if (!normalizedAiText || normalizedAiText.toLowerCase() === 'nothing') {
-    return new Response('No message sent.', { status: 200 });
+  const weatherData = await fetchWeather(env);
+  const weatherText = generateWeatherAlert(weatherData, now);
+  if (!weatherText) {
+    return new Response('No alert conditions met; no message sent.', { status: 200 });
   }
 
-  await sendLineMessage(env, normalizedAiText);
+  await sendLineMessage(env, weatherText);
   return new Response('Weather update sent successfully.', { status: 200 });
 }
 
+async function handleJob(env, now) {
+  try {
+    return await runWeatherJob(env, now);
+  } catch (error) {
+    console.error(error);
+    const message = error instanceof Error ? error.message : String(error);
+    return new Response(`Failed to run weather job: ${message}`, { status: 500 });
+  }
+}
+
 export default {
-  async fetch(request, env) {
-    try {
-      return await runWeatherJob(env);
-    } catch (error) {
-      console.error(error);
-      return new Response(`Failed to run weather job: ${error.message}`, { status: 500 });
-    }
+  async fetch(_request, env) {
+    return handleJob(env, Date.now());
   },
 
-  async scheduled(controller, env, ctx) {
-    try {
-      return await runWeatherJob(env);
-    } catch (error) {
-      console.error(error);
-      return new Response(`Scheduled job failed: ${error.message}`, { status: 500 });
-    }
+  async scheduled(controller, env) {
+    return handleJob(env, controller.scheduledTime);
   },
 };
